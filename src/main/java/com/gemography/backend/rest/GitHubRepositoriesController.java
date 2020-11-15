@@ -61,12 +61,16 @@ public class GitHubRepositoriesController {
 		 
 		 // defautl queries for this endpoint
 		 MultiValueMap<String,String> defaultQueries = new LinkedMultiValueMap<>();
+		 
 		 List<String> q = new ArrayList<>();
 		 q.add(String.format("created:>%s", sdf.format(dateBefore)));
+		 
 		 List<String> sort = new ArrayList<String>();
 		 sort.add("stars");
+		 
 		 List<String> desc = new ArrayList<String>();
 		 desc.add("desc");
+		 
 		 defaultQueries.put("q",q);
 		 defaultQueries.put("sort",sort);
 		 defaultQueries.put("order",desc);
@@ -88,8 +92,16 @@ public class GitHubRepositoriesController {
 					 // on error map the json response to githubErrorResponse
 					 return clientResponse.bodyToMono(GitHubErrorResponse.class).flatMap(error -> {
 						 	// raise exception to get handled by handleGitHubApiException Method at the bottom
+						 	error.setHttpStatus(clientResponse.statusCode());
 		                    return Mono.error(new GitHubApiException(error));
 		               });
+				 })
+				 .onStatus(HttpStatus::is5xxServerError, clientResponse  -> {
+					
+					 GitHubErrorResponse gitHubErrorResponse = new GitHubErrorResponse();
+					 gitHubErrorResponse.setHttpStatus(clientResponse.statusCode());
+					 gitHubErrorResponse.setMessage("github api server internal error");
+					 return Mono.error(new GitHubApiException(gitHubErrorResponse));
 				 })
 				 .bodyToMono(GitHubRepositoriesResponse.class) 
 				 .block();
@@ -117,8 +129,7 @@ public class GitHubRepositoriesController {
 	 @ExceptionHandler({ GitHubApiException.class })
 	 public ResponseEntity<Object> handleGitHubApiException(GitHubApiException ex, WebRequest request) {
 		 GitHubErrorResponse error = ex.getGitHubErrorResponse();
-	       
 	     return new ResponseEntity<Object>(
-	    		 error, new HttpHeaders(), HttpStatus.UNPROCESSABLE_ENTITY);
+	    		 error, new HttpHeaders(), error.getHttpStatus());
 	 }
 }
