@@ -13,7 +13,7 @@ import org.springframework.util.MultiValueMap;
 public class Utils {
 	public static void mergeMaps(MultiValueMap<String,String> defaultParams,MultiValueMap<String, String> customParams) {
 		defaultParams.forEach((key, value) -> {
-			customParams.put(key,value);
+			customParams.putIfAbsent(key, value);
 		});
 	}
 }

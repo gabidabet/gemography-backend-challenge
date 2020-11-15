@@ -11,18 +11,29 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.expression.spel.CodeFlow.ClinitAdder;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.gemography.backend.constants.GitHubApiEndPoints;
+import com.gemography.backend.exceptions.GitHubApiException;
+import com.gemography.backend.models.GitHubErrorResponse;
 import com.gemography.backend.models.GitHubRepositoriesResponse;
 import com.gemography.backend.models.Language;
 import com.gemography.backend.util.Utils;
+
+import reactor.core.publisher.Mono;
 /**
 * RestController to handle requests.
 *
@@ -62,6 +73,7 @@ public class GitHubRepositoriesController {
 		 
 		 //Merge the params sent by user and default params to make user benefit from all functions given by github api
 		 Utils.mergeMaps(defaultQueries, params);
+		 System.out.println(params);
 		 // the uri for search repositories
 		 String uri = UriComponentsBuilder.fromUriString(GitHubApiEndPoints.SEARCH_REPOSITORIES)
 	                .queryParams(params)
@@ -70,7 +82,12 @@ public class GitHubRepositoriesController {
 		 // map the json response to My Model 
 		 GitHubRepositoriesResponse response = webClient.get().uri(uri)
 				 .retrieve()
-				 .bodyToMono(GitHubRepositoriesResponse.class)
+				 .onStatus(HttpStatus::is4xxClientError, clientResponse  -> {
+					 return clientResponse.bodyToMono(GitHubErrorResponse.class).flatMap(error -> {
+		                    return Mono.error(new GitHubApiException(error));
+		               });
+				 })
+				 .bodyToMono(GitHubRepositoriesResponse.class) 
 				 .block();
 		 
 		 //the fun part of reordering the data (i probably will use that algorithm just once so I didn't delegate it to a function or another class)
@@ -92,4 +109,12 @@ public class GitHubRepositoriesController {
 		 // return the responce
 		 return new ArrayList<Language>(helperMap.values());
 	  }
+	 
+	 @ExceptionHandler({ GitHubApiException.class })
+	 public ResponseEntity<Object> handleGitHubApiException(GitHubApiException ex, WebRequest request) {
+		 GitHubErrorResponse error = ex.getGitHubErrorResponse();
+	       
+	     return new ResponseEntity<Object>(
+	    		 error, new HttpHeaders(), HttpStatus.UNPROCESSABLE_ENTITY);
+	 }
 }
