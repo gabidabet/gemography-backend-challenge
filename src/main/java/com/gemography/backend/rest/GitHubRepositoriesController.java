@@ -18,7 +18,13 @@ import org.springframework.web.util.UriComponentsBuilder;
 import com.gemography.backend.constants.GitHubApiEndPoints;
 import com.gemography.backend.models.GitHubRepositoriesResponse;
 import com.gemography.backend.models.Language;
-
+/**
+* RestController to handle requests.
+*
+* @author  Youness EL AACHIQ
+* @version 1.0
+* @since   2020-11-14
+*/
 @RestController
 public class GitHubRepositoriesController {
 
@@ -26,11 +32,12 @@ public class GitHubRepositoriesController {
 	@Autowired
 	private WebClient webClient;
 		
-
+	// The endpoint name that I chose to give a response ( I didn't find an elegant name )
 	 @GetMapping("/search/languages")
 	 public List<Language> getRepositories(HttpServletRequest request, @RequestParam MultiValueMap<String,String> params) {
+		 // HashMap : name of the Language -> the language reference
 		 Map<String,Language> helperMap = new HashMap<>();
-		 
+		 // the uri for search repositories
 		 String uri = UriComponentsBuilder.fromUriString(GitHubApiEndPoints.SEARCH_REPOSITORIES)
 	                .queryParams(params)
 	                .build().toUriString();
@@ -55,6 +62,7 @@ public class GitHubRepositoriesController {
 							 }
 						 }
 				  );
+		 // return the responce
 		 return new ArrayList<Language>(helperMap.values());
 	  }
 }

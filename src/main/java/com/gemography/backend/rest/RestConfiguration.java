@@ -9,7 +9,13 @@ import org.springframework.web.reactive.function.client.WebClient;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-
+/**
+* Beans creation for dependency injection
+*
+* @author  Youness EL AACHIQ
+* @version 1.0
+* @since   2020-11-14
+*/
 
 @Configuration
 public class RestConfiguration {
@@ -20,6 +26,7 @@ public class RestConfiguration {
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
+	// configure web client to containt the base URL of github api
    @Bean
     public WebClient webClient() {
 	   ExchangeStrategies exchangeStrategies = ExchangeStrategies.builder()
