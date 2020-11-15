@@ -33,6 +33,7 @@ import com.gemography.backend.models.GitHubRepositoriesResponse;
 import com.gemography.backend.models.Language;
 import com.gemography.backend.util.Utils;
 
+import lombok.Data;
 import reactor.core.publisher.Mono;
 /**
 * RestController to handle requests.
@@ -41,6 +42,7 @@ import reactor.core.publisher.Mono;
 * @version 1.0
 * @since   2020-11-14
 */
+@Data
 @RestController
 public class GitHubRepositoriesController {
 
@@ -50,7 +52,7 @@ public class GitHubRepositoriesController {
 		
 	// The endpoint name that I chose to give a response ( I didn't find an elegant name )
 	 @GetMapping("/languages/mostused")
-	 public List<Language> getRepositories(HttpServletRequest request, @RequestParam MultiValueMap<String,String> params) {
+	 public List<Language> getMostUsedLanguages(@RequestParam MultiValueMap<String,String> params) {
 		 //the day befor 30 days
 		 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 		 Calendar cal = Calendar.getInstance();
@@ -83,7 +85,9 @@ public class GitHubRepositoriesController {
 		 GitHubRepositoriesResponse response = webClient.get().uri(uri)
 				 .retrieve()
 				 .onStatus(HttpStatus::is4xxClientError, clientResponse  -> {
+					 // on error map the json response to githubErrorResponse
 					 return clientResponse.bodyToMono(GitHubErrorResponse.class).flatMap(error -> {
+						 	// raise exception to get handled by handleGitHubApiException Method at the bottom
 		                    return Mono.error(new GitHubApiException(error));
 		               });
 				 })
